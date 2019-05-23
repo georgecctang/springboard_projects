@@ -27,16 +27,16 @@ exploring the data, and getting acquainted with the 3 tables. */
 /* Q1: Some of the facilities charge a fee to members, but some do not.
 Please list the names of the facilities that do. */
 
-SELECT * FROM Facilities
-where membercost > 0;
+SELECT * 
+FROM Facilities
+WHERE membercost >0;
 
 
 /* Q2: How many facilities do not charge a fee to members? */
 
 SELECT COUNT( * ) 
 FROM Facilities
-WHERE membercost = 0;
-
+WHERE membercost =0;
 
 /* Q3: How can you produce a list of facilities that charge a fee to members,
 where the fee is less than 20% of the facility's monthly maintenance cost?
@@ -74,11 +74,10 @@ FROM Facilities;
 who signed up. Do not use the LIMIT clause for your solution. */
 
 SELECT firstname, surname
-FROM  `Members` 
+FROM Members
 WHERE memid = ( 
 SELECT MAX( memid ) 
-FROM Members );
-
+FROM Members )
 
 /* Q7: How can you produce a list of all members who have used a tennis court?
 Include in your output the name of the court, and the name of the member
@@ -102,14 +101,65 @@ the guest user's ID is always 0. Include in your output the name of the
 facility, the name of the member formatted as a single column, and the cost.
 Order by descending cost, and do not use any subqueries. */
 
-
+SELECT CASE WHEN b.memid =0
+THEN  'GUEST'
+ELSE CONCAT( m.firstname,  ' ', m.surname ) 
+END AS membername, f.name, 
+CASE WHEN b.memid =0
+THEN b.slots * f.guestcost
+ELSE b.slots * f.membercost
+END AS cost
+FROM Bookings AS b
+INNER JOIN Facilities AS f ON b.facid = f.facid
+INNER JOIN Members AS m ON b.memid = m.memid
+WHERE b.starttime
+BETWEEN  '2012-09-14 00:00:00'
+AND  '2014-09-14 23:59:59'
+HAVING cost >30
+ORDER BY cost DESC;
 
 
 /* Q9: This time, produce the same result as in Q8, but using a subquery. */
+
+SELECT membername, name, cost
+FROM (
+
+SELECT CASE WHEN b.memid =0
+THEN  'GUEST'
+ELSE CONCAT( m.firstname,  ' ', m.surname ) 
+END AS membername, f.name, b.starttime, 
+CASE WHEN b.memid =0
+THEN b.slots * f.guestcost
+ELSE b.slots * f.membercost
+END AS cost
+FROM Bookings AS b
+INNER JOIN Facilities AS f ON b.facid = f.facid
+INNER JOIN Members AS m ON b.memid = m.memid
+) AS booking2
+WHERE starttime
+BETWEEN  '2012-09-14 00:00:00'
+AND  '2014-09-14 23:59:59'
+AND cost >30
+ORDER BY cost DESC;
 
 
 /* Q10: Produce a list of facilities with a total revenue less than 1000.
 The output of facility name and total revenue, sorted by revenue. Remember
 that there's a different cost for guests and members! */
+
+SELECT name, SUM( cost ) AS  'revenue'
+FROM (
+
+SELECT f.name, 
+CASE WHEN b.memid =0
+THEN b.slots * f.guestcost
+ELSE b.slots * f.membercost
+END AS cost
+FROM Bookings AS b
+INNER JOIN Facilities AS f ON b.facid = f.facid
+) AS booking2
+GROUP BY name
+HAVING revenue <1000
+ORDER BY revenue;
 
 
